@@ -7,9 +7,7 @@ import { BaseModel } from './base-model.interface';
 function createEffect<T>(generator: (origin$: Subject<T>) => Observable<T>) {
   const destroyRef = inject(DestroyRef);
   const origin$ = new Subject<T>();
-
   generator(origin$).pipe(retry(), takeUntilDestroyed(destroyRef)).subscribe();
-
   return (observableOrValue: T | Observable<T>) => {
     const observable$ = isObservable(observableOrValue)
       ? observableOrValue.pipe(retry())
@@ -22,7 +20,7 @@ function createEffect<T>(generator: (origin$: Subject<T>) => Observable<T>) {
 
 export class BaseStore<T extends BaseModel> {
   private readonly state = {
-    $list: signal<T[] | undefined>(undefined),
+    $list: signal<T[]>([]),
     $selected: signal<T | undefined>(undefined),
     $pagination: signal<Omit<PagedResponse<T>, 'itens'> | undefined>(undefined),
   } as const;
@@ -30,6 +28,7 @@ export class BaseStore<T extends BaseModel> {
   readonly $list = this.state.$list.asReadonly();
   readonly $selected = this.state.$selected.asReadonly();
   readonly $pagination = this.state.$pagination.asReadonly();
+
   readonly $pagedList = computed(() => {
     const list = this.$list();
     const pagination = this.$pagination();
@@ -39,24 +38,46 @@ export class BaseStore<T extends BaseModel> {
     } as PagedResponse<T>;
   });
 
-  public readonly setList = createEffect<T[]>((_) =>
-    _.pipe(
-      tap((newList) => {
-        this.state.$list.update((list) => [...(list ?? []), ...newList]);
+  readonly setList = createEffect<T[]>((action) =>
+    action.pipe(
+      tap((data) =>
+        this.state.$list.update((list) => [...(list ?? []), ...data])
+      )
+    )
+  );
+
+  readonly resetList = createEffect((action) =>
+    action.pipe(tap(() => this.state.$list.update(() => [])))
+  );
+
+  readonly create = createEffect<T>((action) =>
+    action.pipe(
+      tap((newList) =>
+        this.state.$list.update((list) => [...(list ?? []), newList])
+      )
+    )
+  );
+
+  readonly setSelected = createEffect<T>((action) =>
+    action.pipe(tap((data) => this.state.$selected.update(() => data)))
+  );
+
+  readonly updateSelected = createEffect<Partial<T>>((action) =>
+    action.pipe(
+      tap((data) => {
+        this.state.$selected.update((item) => {
+          return item ? {...item, ...data} : item;
+        });
       })
     )
   );
 
-  public readonly create = createEffect<T>((_) =>
-    _.pipe(
-      tap((newList) => {
-        this.state.$list.update((list) => [...(list ?? []), newList]);
-      })
-    )
+  readonly resetSelected = createEffect<void>((action) =>
+    action.pipe(tap(() => this.state.$selected.update(() => undefined)))
   );
 
-  public readonly setPagedList = createEffect<PagedResponse<T>>((_) =>
-    _.pipe(
+  readonly setPagedList = createEffect<PagedResponse<T>>((action) =>
+    action.pipe(
       tap((newList) => {
         this.state.$list.update((list) => [...(list || []), ...newList.itens]);
         this.state.$pagination.update((_) => ({
@@ -72,16 +93,13 @@ export class BaseStore<T extends BaseModel> {
     )
   );
 
-  public readonly nextPage = createEffect<void>((_) =>
-    _.pipe(
+  readonly nextPage = createEffect<void>((action) =>
+    action.pipe(
       tap(() => {
         const pagination = this.state.$pagination();
-
         if (pagination && !pagination.ultimaPagina) {
-          // Atualiza o estado da paginação com a próxima página
           this.state.$pagination.update((currentPagination) => {
             if (!currentPagination) return;
-
             return {
               ...currentPagination,
               paginaAtual: (currentPagination.paginaAtual || 1) + 1,

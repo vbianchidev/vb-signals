@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { tap } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { CampanhaGetRequestParamsDto } from '../dtos/campanha-get-request-params.dto';
 import { CampanhaApiService } from './campanha-api.service';
 import { CampanhaStoreService } from './campanha-store.service';

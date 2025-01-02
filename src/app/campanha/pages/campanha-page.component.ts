@@ -45,10 +45,8 @@ export class CampanhaPageComponent implements OnInit {
   }
 
   getPage(): void {
-    console.log('Next');
     this.campanhaFacadeService.getNextPage();
     const paginantion = this.$paginacao();
-
     this.campanhaFacadeService.getAllCampanhas({
       pagina: paginantion?.paginaAtual || 1,
       quantidadePorPagina: paginantion?.totalItensPagina || 10,
