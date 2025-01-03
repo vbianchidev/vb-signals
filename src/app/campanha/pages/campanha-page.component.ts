@@ -7,11 +7,12 @@ import {
 } from '../providers/campanha-api.service';
 import { CampanhaFacadeService } from '../providers/campanha-facade.service';
 import { CampanhaStoreService } from '../providers/campanha-store.service';
+import { PricefyScrollCdk } from '@carbonara/components/pricefy-scroll-cdk.component';
 
 @Component({
   selector: 'promo-campanha-page',
   standalone: true,
-  imports: [JsonPipe, PricefyScroll],
+  imports: [JsonPipe, PricefyScrollCdk],
   styles: `
     pricefy-scroll {
       height: 350px !important; 
@@ -22,11 +23,11 @@ import { CampanhaStoreService } from '../providers/campanha-store.service';
     }
   `,
   template: `
-    <pricefy-scroll [pagination]="$paginacao" (nextPage)="getPage()">
+    <pricefy-scroll-cdk [pagination]="$paginacao" (nextPage)="getPage()">
       @for (campanha of $campanhas().itens; track $index) {
       <h1>{{ campanha.descricao }}</h1>
       }
-    </pricefy-scroll>
+    </pricefy-scroll-cdk>
   `,
   providers: [
     CampanhaFacadeService,
